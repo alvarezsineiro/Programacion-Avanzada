@@ -8,7 +8,7 @@ import java.util.Properties;
 public class UConexion {
 	
 	private static UConexion instancia;
-	private Connection con= null;
+	private static Connection con= null;
 	
 	private UConexion()
 	{
@@ -33,7 +33,7 @@ private Connection Conectar(){
 			p.load(new FileReader("framework.properties"));
 			Class.forName(p.getProperty("driver"));
 			String s = p.getProperty("base");
-			this.con = DriverManager.getConnection(s,p.getProperty("usuario"),p.getProperty("clave"));
+			this.con = DriverManager.getConnection(s,p.getProperty("usuario"),p.getProperty("contraseña"));
 		}
 		catch(Exception e){
 			System.out.println(e.getMessage());
@@ -42,7 +42,7 @@ private Connection Conectar(){
 		
 		return this.con;
 	}
-	public Connection getConection(){
+	public  Connection getConection(){
 		if(this.con==null)
 		{
 			return this.Conectar();

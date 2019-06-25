@@ -15,13 +15,15 @@ import Utilidades.UConexion;
 
 public class Consultas {
 	
-	public static void guardar(Object o) 
+	public static Object guardar(Object o) 
 	{
 		try{ 
 			Class c = o.getClass();
 			Field[] fields = o.getClass().getDeclaredFields();	
 			String valores = "";
-			String columnas = "";
+			String atributos = "";
+			String tabla = ((Tabla)c.getAnnotation(Tabla.class)).nombre();
+			
 			
 			for(Field f: fields)
 			{
@@ -41,43 +43,45 @@ public class Consultas {
 				}
 			}
 			
-			String tabla = ((Tabla)c.getAnnotation(Tabla.class)).nombre();
+			
 			
 			for(Field f: fields)
 			{
-				if(columnas =="")
+				if(atributos =="")
 				{
 					if(f.getAnnotation(Id.class) == null)
 					{
-						columnas =columnas + "("+((Columna)f.getAnnotation(Columna.class)).nombre();
+						atributos =atributos + "("+((Columna)f.getAnnotation(Columna.class)).nombre();
 					}
 				}
 				else{
 					if(f.getAnnotation(Id.class) == null)
 					{
-						columnas =columnas + ","+((Columna)f.getAnnotation(Columna.class)).nombre();
+						atributos =atributos + ","+((Columna)f.getAnnotation(Columna.class)).nombre();
 					}
 				}
 			}
-			columnas =columnas + ")";
+			atributos =atributos + ")";
 			
 			UConexion u = UConexion.crearInstancia();
 			Connection con = u.getConection();
 			
 			Statement st = con.createStatement();
-			st.execute("INSERT into "+ tabla + columnas +" values ("+valores+")",Statement.RETURN_GENERATED_KEYS);
-			ResultSet generatedKeys = st.getGeneratedKeys();
+			st.execute("INSERT into "+ tabla + atributos +" values ("+valores+")",Statement.RETURN_GENERATED_KEYS);
+			ResultSet rs = st.getGeneratedKeys();
 			
-			if (generatedKeys.next()) 
+			if (rs.next()) 
 			{
-			         System.out.println(generatedKeys.getInt(1));
+		         UBean.ejecutarSet(o, "Id", rs.getInt(1));
 			}
 			con.close();
+			return o;
 		}
-		catch(Exception e){
-			System.out.println(e.getMessage()); 
+		catch(Exception e)
+		{
 			e.printStackTrace();
 		}
+		return o;
 	}
 	
 	public static void modificar(Object o)
@@ -85,41 +89,43 @@ public class Consultas {
 		try{
 			Class c = o.getClass();
 			Field[] fields = o.getClass().getDeclaredFields();
-			String query = "";
-			String valorCondicion = "";
-			String columnaCondicion = "";
+			String consulta = "";
+			String valor = "";
+			String atributo = "";
 			String tabla = ((Tabla)c.getAnnotation(Tabla.class)).nombre();
 			
 			for(Field f: fields)
 			{
 				if(f.getAnnotation(Id.class) != null)
 				{
-					valorCondicion = f.get(o).toString();
-					columnaCondicion = ((Columna)f.getAnnotation(Columna.class)).nombre();
+					valor = f.get(o).toString();
+					atributo = f.getName().toLowerCase();
+					
 				}
 				else
 				{
-					if(query == "")
+					if(consulta == "")
 					{
-						query = ((Columna)f.getAnnotation(Columna.class)).nombre() + "='" +f.get(o).toString()+"'";
+						consulta = ((Columna)f.getAnnotation(Columna.class)).nombre() + "='" +f.get(o).toString()+"'";
 					}
 					else
 					{
-						query = query + ","+((Columna)f.getAnnotation(Columna.class)).nombre() + "='" +f.get(o).toString()+"'";
+						consulta = consulta + ","+((Columna)f.getAnnotation(Columna.class)).nombre() + "='" +f.get(o).toString()+"'";
 				
 					}
 				}
+				
 			}
 			UConexion u = UConexion.crearInstancia();
 			Connection con = u.getConection();
 			
-			
-				Statement st = con.createStatement();
-				st.execute("UPDATE "+ tabla + " SET "+query +" WHERE "+columnaCondicion + "="+valorCondicion);
-				con.close();
+			Statement st = con.createStatement();
+			st.execute("UPDATE "+ tabla + " SET "+consulta +" WHERE "+atributo + "="+valor);
+			con.close();
 			}
-		catch(Exception e){
-			System.out.println(e.getMessage()); 
+		catch(Exception e)
+		{
+			e.printStackTrace(); 
 		}
 	}
 	
@@ -130,15 +136,15 @@ public class Consultas {
 			Class c = o.getClass();
 			Field[] fields = o.getClass().getDeclaredFields();
 			String tabla = ((Tabla)c.getAnnotation(Tabla.class)).nombre();
-			String valorCondicion = "";
-			String columnaCondicion = "";
+			String valor = "";
+			String atributo = "";
 			
 			for(Field f: fields)
 			{
 				if(f.getAnnotation(Id.class) != null)
 				{
-					valorCondicion = f.get(o).toString();
-					columnaCondicion = ((Columna)f.getAnnotation(Columna.class)).nombre();
+					valor = f.get(o).toString();
+					atributo = f.getName().toLowerCase();
 				}
 			}
 			
@@ -147,62 +153,59 @@ public class Consultas {
 			
 			
 			Statement st = con.createStatement();
-			st.execute("DELETE FROM "+ tabla + " WHERE "+columnaCondicion + "="+valorCondicion);
+			st.execute("DELETE FROM "+ tabla + " WHERE "+atributo + "="+valor);
 			con.close();
 		}
-		catch(Exception e){
-			System.out.println(e.getMessage()); 
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 	
 	
-	public static Object obtenerPorId(Class c,Object o)
+	public static Object obtenerPorId(Class c,Object ob)
 	{
 		try{
+			Object o= c.getConstructor(null).newInstance(null);
+			UBean.ejecutarSet(o, "Id", ob);
 			Field[] fields = o.getClass().getDeclaredFields();
-			String columnas = "";
-			String valorCondicion = "";
-			String columnaCondicion = "";
+			String valor = "";
+			String atributo = "";
 			String tabla = ((Tabla)c.getAnnotation(Tabla.class)).nombre();
 			
 			for(Field f: fields)
 			{
-				if(columnas == "")
-				{
-					columnas = ((Columna)f.getAnnotation(Columna.class)).nombre();
-				}
-				else
-				{
-					columnas += ","+((Columna)f.getAnnotation(Columna.class)).nombre();
-				}
 				if(f.getAnnotation(Id.class) != null)
 				{
-					valorCondicion = f.get(o).toString();
-					columnaCondicion = ((Columna)f.getAnnotation(Columna.class)).nombre();
+					valor = f.get(o).toString();
+					atributo = f.getName().toLowerCase();
 				}
 			}
 			UConexion u = UConexion.crearInstancia();
 			Connection con = u.getConection();
 			
-			System.out.println("SELECT "+columnas+" FROM "+tabla + " WHERE "+columnaCondicion +" = ?");
-			PreparedStatement st = con.prepareStatement("SELECT "+columnas+" FROM "+tabla + " WHERE "+columnaCondicion +" = ?");
-			st.setLong(1, Long.valueOf(valorCondicion));
+			PreparedStatement st = con.prepareStatement("SELECT *"+" FROM "+tabla + " WHERE "+atributo +" = "+valor);
 			ResultSet rs = st.executeQuery();
+			
+			System.out.println(rs);
 			while(rs.next())
 			{
-				for(Field field: fields)
+				for(Field f: fields)
 				{
-					UBean.ejecutarSet(o, field.getName(), rs.getObject(((Columna)field.getAnnotation(Columna.class)).nombre()));
+					if(f.getAnnotation(Columna.class) != null)
+					{
+						UBean.ejecutarSet(o, f.getName(), rs.getObject(((Columna)f.getAnnotation(Columna.class)).nombre()));
+					}
 				}
-				
 			}
 			con.close();
-			System.out.println(o.toString());
+			return o;
 		}
-		catch(Exception e){
-			System.out.println(e.getMessage()); 
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
-		return o;
+		return ob;
 	}
 	
 

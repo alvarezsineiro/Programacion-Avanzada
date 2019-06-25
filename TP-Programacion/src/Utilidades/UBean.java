@@ -30,6 +30,7 @@ public class UBean {
 			obj[0] = valor;
 			Method[] met = c.getDeclaredMethods();
 			String metodo = "set".concat( att.substring(0, 1).toUpperCase()).concat( att.substring(1).toLowerCase());  
+			
 			for(Method m: met)
 			{
 				if(m.getName().equals(metodo))
@@ -54,6 +55,7 @@ public class UBean {
 			Object obj = new Object();
 			Method[] met = c.getDeclaredMethods();
 			String metodo = "get".concat( att.substring(0, 1).toUpperCase()).concat(att.substring(1).toLowerCase());  
+			
 			for(Method m: met)
 			{
 				if(m.getName().equals(metodo))
